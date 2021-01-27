@@ -252,7 +252,8 @@ rotate R a = last a : init a
 rotations :: Grid -> [Grid]
 rotations (MkGrid [] a) = [MkGrid [] a]
 rotations (MkGrid a []) = [MkGrid a []]
-rotations (MkGrid cTots rows) = if not (any (/= originalGrid) rotatedGrids) then take (length rows + length cols) rotatedGrids else filter (/= originalGrid) rotatedGrids 
+rotations (MkGrid cTots rows) = rotatedGrids
+  --if not (any (/= originalGrid) rotatedGrids) then take (length rows + length cols) rotatedGrids else filter (/= originalGrid) rotatedGrids 
   where 
     originalGrid :: Grid
     originalGrid = MkGrid cTots rows
@@ -272,6 +273,7 @@ rotations (MkGrid cTots rows) = if not (any (/= originalGrid) rotatedGrids) then
     grpCells _ _ = []
 
     rotations' :: [Row] -> [[Row]]
+    rotations' [r] = [[rotateRow r]] -- only need this one possibility. if the normal "r" was included, that leaves an unrotated grid.
     rotations' (r:rs) = (rotateRow r : rs) : map (r :) (rotations' rs)
     rotations' _ = [[]]
 
@@ -303,24 +305,28 @@ rotations (MkGrid cTots rows) = if not (any (/= originalGrid) rotatedGrids) then
 type Queue = [( [Grid], Grid )]
 
 steps :: Grid -> [Grid]
-steps grid = undefined--dequeue (enqueueMultiple [] [] (rotations grid))
+steps grid = bfs (map (\x -> ([], x)) (rotations grid)) [grid]
   where
 
-    enqueueMultiple :: Queue -> [Grid] -> [Grid] -> Queue
-    enqueueMultiple queue trace (g:gs) | g `elem` map snd queue = queue ++ enqueueMultiple queue trace gs
-                                       | otherwise              = queue ++ [(trace, g )] ++ enqueueMultiple queue trace gs
-    enqueueMultiple queue _ [] = queue
+    --   Grid Queue -> Seen -> Output Trace
+    bfs :: Queue -> [Grid] -> [Grid]
+    bfs [] _ = []
+    bfs [(tr, g)] _ = tr ++ [g]
+    bfs ((tr, q):qs) s = if isSolution then tr ++ [head solution] else bfs queue seen
+      where 
+        solution = solve q
+        isSolution = solution /= []
 
-    dequeue :: Queue -> [Grid]
-    dequeue [] = []
-    dequeue ((trace, g):qs) | solng /= []      = trace ++ [last solng]
-                            | length trace > 3 = trace
-                            | otherwise        = dequeue (enqueueMultiple qs (trace ++ [g]) (rotations g))
-      where solng = solve g
+        trace = tr ++ [q]
 
-    check :: [Grid] -> [Grid]
-    check [] = []
-    check (x:xs) | solve x /= [] = solve x
-                 | otherwise = if checkxs /= [] then x:checkxs else x:check (rotations x)
-      where checkxs = check xs
+        filteredNextNodes = filterGrids s (rotations q)
+
+        queue = qs ++ map (\x -> (trace, x)) filteredNextNodes
+
+        seen = s ++ filteredNextNodes
+
+    filterGrids :: [Grid] -> [Grid] -> [Grid]
+    filterGrids _ [] = []
+    filterGrids [] _ = []
+    filterGrids seen gs = [ g | g <- gs, g `notElem` seen]
 --------------------------------------------------------------------------------
