@@ -44,7 +44,9 @@ data Direction = L | R
 -- 2
 
 ---------------------------------------
--- [Add your explanation of how your implementation works here]
+-- To simply evaluate the sum expressions I just pattern match on the two constructors for Action type:
+-- if its the Add constructor, then I add the accumulator with the value, if it matches the Sub constructor 
+-- then the value is subtracted. 
 ---------------------------------------
 eval :: Action -> Int -> Int
 eval (Add x) acc = acc + x
@@ -60,7 +62,9 @@ eval (Sub y) acc = acc - y
 -- 3
 
 ---------------------------------------
--- [Add your explanation of how your implementation works here]
+-- For applying the cell to the accumulator I pattern match on the MkCell constructor. If the enabled bool is 
+-- True then I reuse the `eval` function to apply the action to the accumulator. If enabled is False then the 
+-- accumulator can just be returned.
 ---------------------------------------
 apply :: Cell -> Int -> Int
 apply (MkCell True action) acc = eval action acc
@@ -76,12 +80,15 @@ apply (MkCell False _) acc = acc
 -- 4
 
 ---------------------------------------
--- [Add your explanation of how your implementation works here]
+-- My result implementation calls an internal helper function accumulate the value, starting at 0. This uses a slightly 
+-- different interface including the accumulating Integer. This accumulate function uses recursion to add the
+-- result of applying the head cell, to the result of the recursive call on the tail of the list.
+-- In the base case it just returns accumulated value. 
 ---------------------------------------
 result :: [Cell] -> Int
-result [] = 0
 result cells = accumulate cells 0
   where
+    accumulate :: [Cell] -> Int -> Int
     accumulate [] acc = acc
     accumulate (c : cs) acc = apply c acc + accumulate cs acc
 
@@ -93,7 +100,9 @@ result cells = accumulate cells 0
 -- [MkCell True (Add 5), MkCell False (Add 5)]
 
 ---------------------------------------
--- [Add your explanation of how your implementation works here]
+-- The implementation for this function is relatively simple, since each cell only has two
+-- states it can be in (enabled or disabled), I just explicitly define the list of both of
+-- those states.
 ---------------------------------------
 states :: Cell -> [Cell]
 states (MkCell _ action) = [MkCell True action, MkCell False action]
@@ -190,7 +199,7 @@ solve (MkGrid colTotals rows) = [MkGrid colTotals possibleRowSet | possibleRowSe
     checkColumns (column:columns) (target:targets) = (target == result column) && checkColumns columns targets
     checkColumns _  _ = False
 
-    permute :: [[a]] -> [[a]]
+    permute :: [[Row]] -> [[Row]]
     permute [] = [[]]
     permute (first:rest) = [ solution : otherSolutions | otherSolutions <- permute rest, solution <- first ]
 
@@ -253,10 +262,7 @@ rotations :: Grid -> [Grid]
 rotations (MkGrid [] a) = [MkGrid [] a]
 rotations (MkGrid a []) = [MkGrid a []]
 rotations (MkGrid cTots rows) = rotatedGrids
-  --if not (any (/= originalGrid) rotatedGrids) then take (length rows + length cols) rotatedGrids else filter (/= originalGrid) rotatedGrids 
   where 
-    originalGrid :: Grid
-    originalGrid = MkGrid cTots rows
 
     rotatedGrids :: [Grid]
     rotatedGrids = [ MkGrid cTots rotation | rotation <- rotations' rows ] ++
@@ -302,16 +308,14 @@ rotations (MkGrid cTots rows) = rotatedGrids
 -- [Add your explanation of how your implementation works here]
 -- BFS - tuple fst = prev; snd = grid element
 ---------------------------------------
-type Queue = [( [Grid], Grid )]
-
 steps :: Grid -> [Grid]
-steps grid = bfs (map (\x -> ([], x)) (rotations grid)) [grid]
+steps grid = bfs (map (pair []) (rotations grid)) [grid]
   where
 
     --   Grid Queue -> Seen -> Output Trace
-    bfs :: Queue -> [Grid] -> [Grid]
+    bfs :: [( [Grid], Grid )] -> [Grid] -> [Grid]
     bfs [] _ = []
-    bfs [(tr, g)] _ = tr ++ [g]
+    bfs [(tr, q)] _ = tr ++ [q]
     bfs ((tr, q):qs) s = if isSolution then tr ++ [head solution] else bfs queue seen
       where 
         solution = solve q
@@ -321,12 +325,15 @@ steps grid = bfs (map (\x -> ([], x)) (rotations grid)) [grid]
 
         filteredNextNodes = filterGrids s (rotations q)
 
-        queue = qs ++ map (\x -> (trace, x)) filteredNextNodes
+        queue = qs ++ map (pair trace) filteredNextNodes
 
         seen = s ++ filteredNextNodes
-
+    
     filterGrids :: [Grid] -> [Grid] -> [Grid]
     filterGrids _ [] = []
     filterGrids [] _ = []
     filterGrids seen gs = [ g | g <- gs, g `notElem` seen]
+
+    pair :: [Grid] -> Grid -> ([Grid], Grid)
+    pair gs g = (gs, g)
 --------------------------------------------------------------------------------
