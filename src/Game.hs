@@ -133,7 +133,7 @@ states (MkCell _ action) = [MkCell True action, MkCell False action]
 ---------------------------------------
 candidates :: [Cell] -> [[Cell]]
 candidates [] = [[]]
-candidates cells = permute [states x | x <- cells]
+candidates cells = permute (map states cells)
   where
     permute :: [[Cell]] -> [[Cell]]
     permute ([enabled, disabled] : remainingStates) = map (enabled :) permutedStates ++ map (disabled :) permutedStates
@@ -216,7 +216,7 @@ solve (MkGrid colTotals rows) = [MkGrid colTotals possibleRowSet | possibleRowSe
     possibleGridSolutionsByRow = permute rowSolutions
 
     rowSolutions :: [[Row]]
-    rowSolutions = [solveRow row | row <- rows] -- all the row solutions which work
+    rowSolutions = map solveRow rows -- all the row solutions which work
 
     checkColumns :: [[Cell]] -> [Int] -> Bool
     checkColumns [] [] = True
@@ -334,7 +334,7 @@ rotations (MkGrid cTots rows) = rotatedGrids
       [ MkGrid cTots (transform rotation rTots) | rotation <- rotations' (transform rows cTots)]
 
     rTots :: [Int]
-    rTots = [t | (MkRow t _) <- rows]
+    rTots = map (\(MkRow t _) -> t) rows
 
     grpCells :: [[Cell]] -> [Int] -> [Row]
     grpCells (c:cs) (t:ts) = MkRow t c : grpCells cs ts
@@ -407,7 +407,6 @@ rotations (MkGrid cTots rows) = rotatedGrids
 steps :: Grid -> [Grid]
 steps grid = bfs (map (pair []) (rotations grid)) [grid]
   where
-
     --             Grid Queue ->  Seen  -> Output Trace
     bfs :: [( [Grid], Grid )] -> [Grid] -> [Grid]
     bfs [] _ = []
@@ -416,18 +415,16 @@ steps grid = bfs (map (pair []) (rotations grid)) [grid]
       where 
         solution = solve q
         isSolution = solution /= []
-
         trace = tr ++ [q]
-
         filteredNextNodes = filterGrids s (rotations q)
-
         queue = qs ++ map (pair trace) filteredNextNodes
-
         seen = s ++ filteredNextNodes
     
     filterGrids :: [Grid] -> [Grid] -> [Grid]
     filterGrids seen gs = filter (`notElem` seen) gs
 
+    -- Could've used zip here, but I wanted to use the constant value instead
+    -- of a list. So decided to go with this function definition.  
     pair :: [Grid] -> Grid -> ([Grid], Grid)
     pair gs g = (gs, g)
 --------------------------------------------------------------------------------

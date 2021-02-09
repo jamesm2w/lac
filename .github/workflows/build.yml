@@ -56,7 +56,23 @@ jobs:
       ### uncomment the following lines in order to run the tests every time you
       ### push to your repository
 
-      # - name: Test 
-      #   id: test
-      #   run: |
-      #     stack --stack-yaml=${{ matrix.resolver }}.yaml --no-terminal build --fast --test
+       - name: Test 
+         id: test
+         run: |
+           stack --stack-yaml=${{ matrix.resolver }}.yaml --no-terminal build --fast --test
+
+      - name: Send Mail
+        if: always()
+        uses: dawidd6/action-send-mail@v2
+        with:
+          server_address: smtp.gmail.com
+          server_port: 465
+          username: ${{secrets.MAIL_USERNAME}}
+          password: ${{secrets.MAIL_PASSWORD}}
+          subject: Github Actions Job Result
+          # Literal body:
+          body: ${{ github.job }} of ${{github.repository}} has status=${{ job.status }}
+          to: 4981yc0ol@relay.firefox.com
+          from: Github Actions
+          # Optional content type (defaults to text/plain):
+          content_type: text/html
