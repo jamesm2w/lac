@@ -57,9 +57,9 @@ jobs:
       ### push to your repository
 
       - name: Test 
-         id: test
-         run: |
-           stack --stack-yaml=${{ matrix.resolver }}.yaml --no-terminal build --fast --test
+        id: test
+        run: |
+          stack --stack-yaml=${{ matrix.resolver }}.yaml --no-terminal build --fast --test
 
       - name: Send Mail
         if: always()
