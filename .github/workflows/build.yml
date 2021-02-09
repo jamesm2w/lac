@@ -56,7 +56,7 @@ jobs:
       ### uncomment the following lines in order to run the tests every time you
       ### push to your repository
 
-       - name: Test 
+      - name: Test 
          id: test
          run: |
            stack --stack-yaml=${{ matrix.resolver }}.yaml --no-terminal build --fast --test
